@@ -1,110 +1,215 @@
-# Puppeteer Scraper Documentation
 
-## Overview
-This script uses Puppeteer to scrape question data from the SAT Suite Question Bank website. It applies filters, navigates through paginated results, and extracts detailed information for each question into a JSON file.
 
-## Prerequisites
-- Node.js installed on your system.
-- Puppeteer library installed (`npm install puppeteer`).
+* * *
 
-## Script Workflow
-The script follows these steps:
-1. Launches a browser instance and opens a new page.
-2. Navigates to the SAT Suite Question Bank search page.
-3. Applies filters for assessment type, test type, and topic (e.g., Algebra).
-4. Clicks the search button and waits for the results page to load.
-5. Iterates through the paginated results table, extracting question details from each row.
-6. For each question, opens a modal to scrape additional details and the full question content.
-7. Saves all scraped data incrementally to a `result.json` file.
+1\. Initial Setup
+-----------------
 
-## Code Breakdown
+### Importing Modules
 
-### 1. Importing Required Libraries
-```javascript
-const puppeteer = require("puppeteer");
-const fs = require("fs");
-```
-Imports Puppeteer for browser automation and the filesystem module for saving data.
+    import puppeteer from "puppeteer";
+    import fs from "fs";
+    import { filters } from "./filters.js";
+    
 
-### 2. Browser Initialization
-```javascript
-const browser = await puppeteer.launch({ headless: false });
-const page = await browser.newPage();
-```
-Launches a browser instance in non-headless mode and opens a new tab.
+*   **puppeteer**: Used for browser automation.
+*   **fs**: Used for reading and writing JSON files.
+*   **filters**: External file containing filter options for the scraper.
 
-### 3. Navigating to the Target Website
-```javascript
-await page.goto(
-  "https://satsuitequestionbank.collegeboard.org/digital/search",
-  { waitUntil: "networkidle2" }
-);
-```
-Opens the SAT Suite Question Bank search page and waits for the network to be idle.
+### Initializing Variables
 
-### 4. Applying Filters
-```javascript
-await page.select("#selectAssessmentType", "99");
-await page.select("#selectTestType", "2");
-await page.click("#checkbox-algebra");
-```
-Sets the filters for SAT assessment, Math test type, and Algebra topic.
+    const allData = []; // Store all scraped data
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    
 
-### 5. Scraping Data
-Loops through rows in the results table, scraping data for each question:
-```javascript
-const tableRows = await page.$$("#apricot_table_9 tbody tr");
-for (let row of tableRows) {
-  const rowData = await row.evaluate((row) => {
-    const columns = Array.from(row.querySelectorAll("td"));
-    return {
-      id: columns[1]?.innerText.trim(),
-      skill: columns[3]?.innerText.trim(),
-      skillDescription: columns[4]?.innerText.trim(),
-    };
-  });
-}
-```
+*   **allData**: Holds all scraped data across filters and pages.
+*   **sleep**: Helper function to pause execution for a specified number of milliseconds.
 
-### 6. Opening and Scraping Modal Details
-For each row, opens a modal and extracts detailed information:
-```javascript
-const button = await row.$(".view-question-button");
-await button.click();
-await page.waitForSelector(".cb-dialog-content .column-content");
-```
-Scrapes the modal title, assessment details, and the full question content.
+* * *
 
-### 7. Saving Data
-Saves the scraped data incrementally to a JSON file:
-```javascript
-fs.writeFileSync("result.json", JSON.stringify(allData, null, 2));
-```
+2\. Launching Puppeteer Browser
+-------------------------------
 
-### 8. Pagination Handling
-Checks if there is a next page and navigates to it:
-```javascript
-const nextButton = await page.$("#undefined_next");
-if (nextButton) {
-  const isDisabled = await nextButton.evaluate((btn) =>
-    btn.classList.contains("cb-disabled")
-  );
-  if (!isDisabled) {
-    await nextButton.click();
-    await page.waitForSelector("#apricot_table_9 tbody tr");
-  }
-}
-```
+### Setting Up the Browser
 
-## Output
-The script generates a `result.json` file containing an array of objects. Each object includes:
-- Question ID
-- Skill and skill description
-- Modal details (title, assessment, test, domain, skill, difficulty)
-- Full question content as HTML
+    const browser = await puppeteer.launch({ headless: false });
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1080, height: 2080 });
+    
 
-## Error Handling
-The script includes retry logic for loading modals and skips rows where scraping fails. Errors are logged to the console for debugging.
+*   **Browser Launch**: Puppeteer is launched in non-headless mode (visible browser window).
+*   **Viewport**: Sets the browser window size to 1080x2080 pixels.
 
-## Conclusion
-This script automates the extraction of question data from the SAT Suite Question Bank website, handling filters, pagination, and detailed modal content. It is robust and capable of incremental data saving for reliability.
+### Navigating to the SAT Suite Website
+
+    await page.goto(
+      "https://satsuitequestionbank.collegeboard.org/digital/search",
+      { waitUntil: "networkidle2" }
+    );
+    
+
+*   **URL**: Navigates to the SAT Suite Question Bank search page.
+*   **waitUntil**: Ensures all network requests are idle before proceeding.
+
+* * *
+
+3\. Applying Filters
+--------------------
+
+### Iterating Through Filters
+
+    for (let data of filters) {
+      console.log(data);
+      
+      // Select assessment and test type
+      await page.select("#selectAssessmentType", data.assessment.value);
+      await page.select("#selectTestType", data.test.value);
+    
+      // Apply domain filters
+      for (let domain of data.domain) {
+        await page.click(domain.id);
+      }
+    
+      // Start search
+      await page.click(".cb-btn.cb-btn-primary");
+      await page.waitForFunction('window.location.href.includes("results")');
+    }
+    
+
+*   **Filters**: Loops through the `filters` array to apply each filter.
+*   **Assessment & Test Type**: Dropdown selections for assessment (e.g., SAT) and test type (e.g., Math).
+*   **Domains**: Applies filters by clicking checkboxes.
+*   **Search**: Clicks the search button to navigate to the results page.
+
+* * *
+
+4\. Scraping Results (Paginated)
+--------------------------------
+
+### Scraping Table Rows
+
+    const tableRows = await page.$$("#apricot_table_9 tbody tr");
+    for (let row of tableRows) {
+      const rowData = await row.evaluate((row) => {
+        const columns = Array.from(row.querySelectorAll("td"));
+        return {
+          id: columns[1]?.innerText.trim(),
+          question_type: columns[4]?.innerText.trim(),
+        };
+      });
+    }
+    
+
+*   **Table Rows**: Selects all rows from the results table.
+*   **Data Extraction**: Extracts the `id` and `question_type` from each row.
+
+### Scraping Modal Content
+
+    const button = await row.$(".view-question-button");
+    await button.click();
+    
+    // Retry logic to ensure modal is loaded
+    let modalLoaded = false;
+    for (let attempts = 0; attempts < 3; attempts++) {
+      try {
+        await page.waitForSelector(".cb-dialog-content .column-content", {
+          timeout: 60000,
+        });
+        modalLoaded = true;
+        break;
+      } catch (e) {
+        console.warn(`Attempt ${attempts + 1} to load modal failed. Retrying...`);
+      }
+    }
+    if (!modalLoaded) continue; // Skip row if modal fails to load
+    
+
+*   **Opening Modals**: Clicks the "View Question" button to open a modal.
+*   **Retry Logic**: Retries loading the modal up to 3 times if it fails.
+
+### Extracting Modal Data
+
+    const modalDetails = await page.evaluate(() => {
+      const assessment = document
+        .querySelector(".question-banner .col-sm:nth-child(1) .column-content")
+        ?.innerText.trim();
+      const test = document
+        .querySelector(".question-banner .col-sm:nth-child(2) .column-content")
+        ?.innerText.trim();
+      const domain = document
+        .querySelector(".question-banner .col-sm:nth-child(3) .column-content")
+        ?.innerText.trim();
+      const skill = document
+        .querySelector(".question-banner .col-sm:nth-child(4) .column-content")
+        ?.innerText.trim();
+      const difficulty =
+        document
+          .querySelector(
+            ".question-banner .col-sm:nth-child(5) .column-content span"
+          )
+          ?.getAttribute("aria-label") || "N/A";
+    
+      return { assessment, test, domain, skill, difficulty };
+    });
+    
+
+*   **Details Extracted**:
+    *   Assessment
+    *   Test
+    *   Domain
+    *   Skill
+    *   Difficulty
+
+* * *
+
+5\. Saving Data
+---------------
+
+### Saving Incremental Data
+
+    if (!fs.existsSync(data.folderName)) {
+      fs.mkdirSync(data.folderName);
+    }
+    fs.writeFileSync(
+      `${data.folderName}/${data.fileNamePrefix}_${increment}.json`,
+      JSON.stringify(allData, null, 2)
+    );
+    
+
+*   **Folders**: Ensures the folder for the filter exists.
+*   **JSON Files**: Saves data incrementally with a unique filename.
+
+* * *
+
+6\. Final Steps
+---------------
+
+### Pagination Handling
+
+    const nextButton = await page.$("#undefined_next");
+    if (nextButton) {
+      const isDisabled = await nextButton.evaluate((btn) =>
+        btn.classList.contains("cb-disabled")
+      );
+      if (!isDisabled) {
+        await nextButton.click();
+        await page.waitForSelector("#apricot_table_9 tbody tr");
+      } else {
+        hasNextPage = false;
+      }
+    } else {
+      hasNextPage = false;
+    }
+    
+
+*   **Next Button**: Checks if a "Next" button exists and is clickable.
+*   **Pagination End**: Ends pagination if the button is disabled or missing.
+
+### Completion
+
+    await browser.close();
+    console.log("Scraping completed. All data saved to result.json.");
+    
+
+*   **Browser**: Closes the Puppeteer browser.
+*   **Log**: Outputs a completion message.
