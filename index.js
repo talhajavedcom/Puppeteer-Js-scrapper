@@ -37,7 +37,7 @@ import { filters } from "./filters.js";
         const tableRows = await page.$$("#apricot_table_9 tbody tr");
         for (let row of tableRows) {
           try {
-            // Scrape row data
+            // Scrape row data 
             const rowData = await row.evaluate((row) => {
               const columns = Array.from(row.querySelectorAll("td"));
               return {
@@ -93,17 +93,7 @@ import { filters } from "./filters.js";
                   ".question-banner .col-sm:nth-child(3) .column-content"
                 )
                 ?.innerText.trim();
-              const skill = document
-                .querySelector(
-                  ".question-banner .col-sm:nth-child(4) .column-content"
-                )
-                ?.innerText.trim();
-              const difficulty =
-                document
-                  .querySelector(
-                    ".question-banner .col-sm:nth-child(5) .column-content span"
-                  )
-                  ?.getAttribute("aria-label") || "N/A"; // Use aria-label for difficulty
+            // Use aria-label for difficulty
 
               return {
                 assessment,
