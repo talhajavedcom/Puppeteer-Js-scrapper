@@ -3,8 +3,7 @@ export const filters = [
     assessment: { value: "99", label: "SAT" },
     test: { value: "2", label: "Math" },
     domain: [
-      { id: "#checkbox-algebra", label: "checkbox-algebra" },
-      { id: "#checkbox-advanced\\ math", label: "checkbox-advanced math" },
+     
       {
         id: "#checkbox-problem-solving\\ and\\ data\\ analysis",
         label: "checkbox-problem-solving and data analysis",
