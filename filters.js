@@ -3,7 +3,7 @@ export const filters = [
     assessment: { value: "99", label: "SAT" },
     test: { value: "2", label: "Math" },
     domain: [
-     
+
       {
         id: "#checkbox-problem-solving\\ and\\ data\\ analysis",
         label: "checkbox-problem-solving and data analysis",
@@ -43,24 +43,7 @@ export const filters = [
   {
     assessment: { value: "100", label: "PSAT/NMSQT & PSAT 10" },
     test: { value: "1", label: "Reading and Writing" },
-    domain: [
-      {
-        id: "#checkbox-information\\ and\\ ideas",
-        label: "checkbox-information and ideas",
-      },
-      {
-        id: "#checkbox-craft\\ and\\ structure",
-        label: "checkbox-craft and structure",
-      },
-      {
-        id: "#checkbox-expression\\ of\\ ideas",
-        label: "checkbox-expression of ideas",
-      },
-      {
-        id: "#checkbox-standard\\ english\\ conventions",
-        label: "checkbox-standard english conventions",
-      },
-    ],
+
     fileNamePrefix: "PSAT_Reading_and_Writing",
     folderName: "PSAT_Reading_and_Writing",
   },
