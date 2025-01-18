@@ -43,20 +43,14 @@ export const filters = [
   },
   {
     assessment: { value: "100", label: "PSAT/NMSQT & PSAT 10" },
-    test: { value: "1", label: "Reading and Writing" },
-    domain: [
-      {
-        id: "#checkbox-information\\ and\\ ideas",
-        label: "checkbox-information and ideas",
-      },
+
+    
+
       {
         id: "#checkbox-craft\\ and\\ structure",
         label: "checkbox-craft and structure",
       },
-      {
-        id: "#checkbox-expression\\ of\\ ideas",
-        label: "checkbox-expression of ideas",
-      },
+    
       {
         id: "#checkbox-standard\\ english\\ conventions",
         label: "checkbox-standard english conventions",
